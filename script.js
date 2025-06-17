@@ -15,12 +15,12 @@ const registerForm = document.getElementById('registerForm');
 const searchInput = document.getElementById('searchInput');
 const searchButton = document.getElementById('searchButton');
 
-// Mobile Menu Toggle
+
 mobileMenuBtn.addEventListener('click', () => {
     mobileMenu.classList.toggle('hidden');
 });
 
-// Sample book data
+
 const books = [
     {
         id: 1,
@@ -384,11 +384,11 @@ const books = [
     }
 ];
 
-// Sample reviews data
+
 let reviews = JSON.parse(localStorage.getItem('reviews')) || [];
 let userActions = JSON.parse(localStorage.getItem('userActions')) || {};
 
-// Check if user is logged in
+
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 if (currentUser) {
     loginBtn.classList.add('hidden');
@@ -397,7 +397,7 @@ if (currentUser) {
     document.querySelector('.user-greeting').textContent = `Xin chào, ${currentUser.name}`;
 }
 
-// Load saved login credentials
+
 const savedCredentials = JSON.parse(localStorage.getItem('savedCredentials')) || null;
 if (savedCredentials && document.getElementById('loginEmail')) {
     document.getElementById('loginEmail').value = savedCredentials.email;
@@ -405,7 +405,7 @@ if (savedCredentials && document.getElementById('loginEmail')) {
     document.getElementById('rememberMe').checked = true;
 }
 
-// Modal Toggle
+
 loginBtn.addEventListener('click', () => {
     loginModal.classList.remove('hidden');
 });
@@ -436,12 +436,12 @@ switchToLogin.addEventListener('click', () => {
     clearErrors();
 });
 
-// Clear error messages
+
 function clearErrors() {
     document.querySelectorAll('.error-message').forEach(error => error.classList.add('hidden'));
 }
 
-// Login Form Submission
+
 loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
@@ -476,13 +476,13 @@ loginForm.addEventListener('submit', (e) => {
     document.querySelector('.user-greeting').textContent = `Xin chào, ${currentUser.name}`;
     clearErrors();
 
-    // Update review form visibility
+
     if (document.getElementById('reviewFormSection')) {
         document.getElementById('reviewFormSection').classList.remove('hidden');
     }
 });
 
-// Register Form Submission
+
 registerForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const name = document.getElementById('registerName')?.value || '';
@@ -539,7 +539,7 @@ registerForm.addEventListener('submit', (e) => {
     }
 });
 
-// Logout
+
 logoutBtn.addEventListener('click', () => {
     currentUser = null;
     localStorage.removeItem('currentUser');
@@ -551,7 +551,7 @@ logoutBtn.addEventListener('click', () => {
     }
 });
 
-// Function to create a book card element
+
 function createBookCard(book) {
     const bookReviews = reviews.filter(r => r.bookId === book.id);
     const averageRating = bookReviews.length > 0
@@ -586,7 +586,7 @@ function createBookCard(book) {
     return card;
 }
 
-// Genre Filter
+
 const genreFilters = document.querySelectorAll('.genre-filter');
 const bookGrid = document.getElementById('bookGrid');
 const pagination = document.querySelector('.pagination');
@@ -599,13 +599,13 @@ genreFilters.forEach(filter => {
 
         const selectedGenre = filter.dataset.genre;
 
-        // Clear current books in grid
+    
         bookGrid.innerHTML = '';
 
-        // Filter books
+    
         let filteredBooks;
         if (selectedGenre === 'all') {
-            // Determine current page
+           
             const currentPage = parseInt(document.querySelector('.pagination-btn.active')?.textContent || '1');
             const booksPerPage = 8;
             const startIndex = (currentPage - 1);
@@ -617,7 +617,7 @@ genreFilters.forEach(filter => {
             pagination.classList.add('hidden');
         }
 
-        // Render filtered books
+    
         if (filteredBooks.length === 0) {
             bookGrid.innerHTML = '<p class="text-center col-span-4">Không tìm thấy sách phù hợp.</p>';
         } else {
@@ -627,7 +627,7 @@ genreFilters.forEach(filter => {
             });
         }
 
-        // Rebind view review buttons
+  
         bookGrid.querySelectorAll('.btn-view-reviews').forEach(button => {
             button.addEventListener('click', () => {
                 const bookId = button.dataset.bookId;
@@ -637,7 +637,7 @@ genreFilters.forEach(filter => {
             });
         });
 
-        // Rebind bookmark buttons
+     
         bookGrid.querySelectorAll('.btn-save').forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -665,7 +665,7 @@ genreFilters.forEach(filter => {
     });
 });
 
-// Bookmark Button
+
 const bookmarkButtons = document.querySelectorAll('.btn-save');
 bookmarkButtons.forEach(button => {
     button.addEventListener('click', (e) => {
@@ -692,7 +692,7 @@ bookmarkButtons.forEach(button => {
     });
 });
 
-// Update book ratings
+
 function updateBookRatings() {
     if (bookGrid) {
         books.forEach(book => {
@@ -713,7 +713,7 @@ function updateBookRatings() {
     }
 }
 
-// View Reviews
+
 const viewReviewButtons = document.querySelectorAll('.btn-view-reviews');
 viewReviewButtons.forEach(button => {
     button.addEventListener('click', () => {
@@ -727,7 +727,7 @@ viewReviewButtons.forEach(button => {
     });
 });
 
-// Book Review Page Logic
+
 if (window.location.pathname.includes('book-review.html')) {
     console.log('Processing book-review.html');
     const urlParams = new URLSearchParams(window.location.search);
@@ -759,7 +759,7 @@ if (window.location.pathname.includes('book-review.html')) {
                     </div>
                 `;
 
-                // Display reviews
+           
                 const reviewList = document.getElementById('reviewList');
                 if (reviewList) {
                     reviewList.innerHTML = bookReviews.length > 0 ? bookReviews.map((review, index) => `
@@ -790,7 +790,7 @@ if (window.location.pathname.includes('book-review.html')) {
                 `).join('') : '<p>Chưa có đánh giá nào.</p>';
                 }
 
-                // Delete Review
+               
                 document.querySelectorAll('.btn-delete-review').forEach(button => {
                     button.addEventListener('click', () => {
                         const reviewId = button.dataset.reviewId;
@@ -804,7 +804,7 @@ if (window.location.pathname.includes('book-review.html')) {
                     });
                 });
 
-                // Like/Dislike Review with Toggle
+            
                 document.querySelectorAll('.btn-like, .btn-dislike').forEach(button => {
                     button.addEventListener('click', () => {
                         if (!currentUser) {
@@ -845,7 +845,7 @@ if (window.location.pathname.includes('book-review.html')) {
                     });
                 });
 
-                // Review Form Submission
+                
                 const reviewForm = document.getElementById('reviewForm');
                 if (reviewForm) {
                     reviewForm.addEventListener('submit', (e) => {
@@ -874,7 +874,6 @@ if (window.location.pathname.includes('book-review.html')) {
                     });
                 }
 
-                // Show review form if logged in
                 if (currentUser && document.getElementById('reviewFormSection')) {
                     document.getElementById('reviewFormSection').classList.remove('hidden');
                 }
@@ -889,5 +888,5 @@ if (window.location.pathname.includes('book-review.html')) {
     }
 }
 
-// Update ratings on page load
+
 updateBookRatings();
