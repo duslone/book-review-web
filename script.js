@@ -745,6 +745,11 @@ genreFilters.forEach(filter => {
         filter.classList.add('active');
 
         const selectedGenre = filter.dataset.genre;
+        
+        // Clear search input when filtering
+        if (searchInput) {
+            searchInput.value = '';
+        }
 
         bookGrid.innerHTML = '';
 
@@ -770,52 +775,8 @@ genreFilters.forEach(filter => {
             });
         }
 
-        bookGrid.querySelectorAll('.btn-view-reviews').forEach(button => {
-            button.addEventListener('click', () => {
-                const bookId = button.dataset.bookId;
-                if (bookId) {
-                    window.location.href = `book-review.html?bookId=${bookId}`;
-                }
-            });
-        });
-
-        bookGrid.querySelectorAll('.btn-save').forEach(button => {
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                const bookCard = button.closest('.book-card');
-                if (!bookCard) return;
-                
-                const bookId = parseInt(bookCard.dataset.bookId);
-                
-                if (!currentUser) {
-                    loginModal.classList.remove('hidden');
-                    return;
-                }
-
-                const isSaved = saveBook(bookId);
-                const icon = button.querySelector('i');
-                
-                if (isSaved) {
-                    icon.classList.remove('fa-bookmark');
-                    icon.classList.add('fa-check');
-                    button.innerHTML = '<i class="fas fa-check mr-1"></i> Đã lưu';
-                    button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    button.classList.add('bg-green-500', 'hover:bg-green-600');
-                } else {
-                    icon.classList.remove('fa-check');
-                    icon.classList.add('fa-bookmark');
-                    button.innerHTML = '<i class="fas fa-bookmark mr-1"></i> Lưu';
-                    button.classList.remove('bg-green-500', 'hover:bg-green-600');
-                    button.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                }
-                
-                // Thêm hiệu ứng visual feedback
-                button.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                    button.style.transform = 'scale(1)';
-                }, 150);
-            });
-        });
+        // Update event listeners for new cards
+        updateBookCardEventListeners();
     });
 });
 
@@ -1431,9 +1392,222 @@ if (window.location.pathname.includes('book-review.html')) {
 // Update ratings on page load
 updateBookRatings();
 
+// Search functionality
+if (searchInput && searchButton) {
+    // Search on button click
+    searchButton.addEventListener('click', performSearch);
+    
+    // Search on Enter key press
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performSearch();
+        }
+    });
+    
+    // Search on input change with debounce for better performance
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 300); // 300ms delay
+    });
+    
+    // Clear search when clicking on "Tất cả" filter
+    const allFilter = document.querySelector('.genre-filter[data-genre="all"]');
+    if (allFilter) {
+        allFilter.addEventListener('click', () => {
+            if (searchInput) {
+                searchInput.value = '';
+                performSearch(); // Trigger search to show all books
+            }
+        });
+    }
+    
+    // Add placeholder text animation
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.placeholder) {
+            searchInput.placeholder = 'Tìm kiếm sách, tác giả...';
+        }
+    });
+    
+    searchInput.addEventListener('blur', () => {
+        if (searchInput.placeholder) {
+            searchInput.placeholder = 'Tìm kiếm sách, tác giả...';
+        }
+    });
+}
+
+function performSearch() {
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    
+    // Add loading state
+    const searchBar = document.querySelector('.search-bar');
+    if (searchBar) {
+        searchBar.classList.add('search-loading');
+    }
+    
+    // Check if we're on a page with book grid
+    if (!bookGrid) {
+        // If no book grid, redirect to home page with search
+        if (searchTerm) {
+            window.location.href = `index.html?search=${encodeURIComponent(searchTerm)}`;
+        } else {
+            window.location.href = 'index.html';
+        }
+        return;
+    }
+    
+    // Get current active genre filter
+    const activeGenreFilter = document.querySelector('.genre-filter.active');
+    const selectedGenre = activeGenreFilter ? activeGenreFilter.dataset.genre : 'all';
+    
+    if (!searchTerm) {
+        // If search is empty, show books based on current genre filter
+        if (selectedGenre === 'all') {
+            const currentPage = parseInt(document.querySelector('.pagination-btn.active')?.textContent || '1');
+            const booksPerPage = 8;
+            const startIndex = (currentPage - 1) * booksPerPage;
+            const endIndex = startIndex + booksPerPage;
+            const currentBooks = books.slice(startIndex, endIndex);
+            
+            bookGrid.innerHTML = '';
+            currentBooks.forEach(book => {
+                const bookCard = createBookCard(book);
+                bookGrid.appendChild(bookCard);
+            });
+            
+            // Show pagination for "all" genre
+            if (pagination) pagination.classList.remove('hidden');
+        } else {
+            // Show books for selected genre
+            const filteredBooks = books.filter(book => book.genres.includes(selectedGenre));
+            
+            bookGrid.innerHTML = '';
+            if (filteredBooks.length === 0) {
+                bookGrid.innerHTML = '<p class="text-center col-span-4">Không tìm thấy sách phù hợp.</p>';
+            } else {
+                filteredBooks.forEach(book => {
+                    const bookCard = createBookCard(book);
+                    bookGrid.appendChild(bookCard);
+                });
+            }
+            
+            // Hide pagination for specific genres
+            if (pagination) pagination.classList.add('hidden');
+        }
+        
+        // Update event listeners for new cards
+        updateBookCardEventListeners();
+        
+        // Remove loading state
+        if (searchBar) {
+            searchBar.classList.remove('search-loading');
+        }
+        return;
+    }
+    
+    // Filter books based on search term and current genre filter
+    let filteredBooks = books.filter(book => 
+        book.title.toLowerCase().includes(searchTerm) ||
+        book.author.toLowerCase().includes(searchTerm) ||
+        book.description.toLowerCase().includes(searchTerm) ||
+        book.publisher.toLowerCase().includes(searchTerm)
+    );
+    
+    // Apply genre filter if not "all"
+    if (selectedGenre !== 'all') {
+        filteredBooks = filteredBooks.filter(book => book.genres.includes(selectedGenre));
+    }
+    
+    // Clear current books
+    bookGrid.innerHTML = '';
+    
+    if (filteredBooks.length === 0) {
+        bookGrid.innerHTML = `<p class="search-results-empty">Không tìm thấy sách phù hợp với từ khóa: <strong>"${searchTerm}"</strong></p>`;
+    } else {
+        filteredBooks.forEach(book => {
+            const bookCard = createBookCard(book);
+            bookGrid.appendChild(bookCard);
+        });
+    }
+    
+    // Hide pagination when searching
+    if (pagination) pagination.classList.add('hidden');
+    
+    // Update event listeners for new cards
+    updateBookCardEventListeners();
+    
+    // Remove loading state
+    if (searchBar) {
+        searchBar.classList.remove('search-loading');
+    }
+}
+
+function updateBookCardEventListeners() {
+    if (!bookGrid) return;
+    
+    // Add event listeners for view reviews buttons
+    bookGrid.querySelectorAll('.btn-view-reviews').forEach(button => {
+        button.addEventListener('click', () => {
+            const bookId = button.dataset.bookId;
+            if (bookId) {
+                window.location.href = `book-review.html?bookId=${bookId}`;
+            }
+        });
+    });
+    
+    // Add event listeners for save buttons
+    bookGrid.querySelectorAll('.btn-save').forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const bookCard = button.closest('.book-card');
+            if (!bookCard) return;
+            
+            const bookId = parseInt(bookCard.dataset.bookId);
+            
+            if (!currentUser) {
+                loginModal.classList.remove('hidden');
+                return;
+            }
+
+            const isSaved = saveBook(bookId);
+            const icon = button.querySelector('i');
+            
+            if (isSaved) {
+                icon.classList.remove('fa-bookmark');
+                icon.classList.add('fa-check');
+                button.innerHTML = '<i class="fas fa-check mr-1"></i> Đã lưu';
+                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                button.classList.add('bg-green-500', 'hover:bg-green-600');
+            } else {
+                icon.classList.remove('fa-check');
+                icon.classList.add('fa-bookmark');
+                button.innerHTML = '<i class="fas fa-bookmark mr-1"></i> Lưu';
+                button.classList.remove('bg-green-500', 'hover:bg-green-600');
+                button.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }
+            
+            // Add visual feedback
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+}
+
 // Update save buttons when page loads
 document.addEventListener('DOMContentLoaded', () => {
     updateSaveButtons();
+    updateBookCardEventListeners();
+    
+    // Handle search parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam && searchInput) {
+        searchInput.value = decodeURIComponent(searchParam);
+        performSearch();
+    }
 });
 
 // Khi trang load xong cũng cập nhật
