@@ -1,17 +1,17 @@
-
+/* General Styles */
 .main-body {
     background-color: #f9fafb;
     font-family: sans-serif;
 }
 
-
+/* Container */
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 16px;
 }
 
-
+/* Header */
 .header {
     background-color: white;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -220,6 +220,7 @@ html, body {
     }
 }
 
+/* Main Content */
 .main-content {
     padding: 32px 16px;
 }
@@ -262,25 +263,25 @@ html, body {
 
 .book-grid {
     display: grid;
-    grid-template-columns: 1fr; 
+    grid-template-columns: repeat(4, 1fr); /* Luôn 4 cột trên mọi màn hình */
     gap: 24px;
 }
 
 @media (min-width: 640px) {
     .book-grid {
-        grid-template-columns: repeat(2, 1fr); 
+        grid-template-columns: repeat(2, 1fr); /* 2 cột trên tablet */
     }
 }
 
 @media (min-width: 768px) {
     .book-grid {
-        grid-template-columns: repeat(3, 1fr); 
+        grid-template-columns: repeat(3, 1fr); /* 3 cột trên laptop */
     }
 }
 
 @media (min-width: 1024px) {
     .book-grid {
-        grid-template-columns: repeat(4, 1fr); 
+        grid-template-columns: repeat(4, 1fr); /* 4 cột trên desktop */
     }
 }
 
@@ -432,6 +433,7 @@ html, body {
     border-color: #2563eb;
 }
 
+/* Modal */
 .modal {
     position: fixed;
     inset: 0;
@@ -566,7 +568,7 @@ html, body {
     color: #1d4ed8;
 }
 
-
+/* Book Detail */
 .book-detail {
     margin-bottom: 32px;
 }
@@ -724,7 +726,32 @@ html, body {
     background-color: #4b5563;
 }
 
+.btn-delete-reply{
+    background-color: #ef4444;
+    color: white;
+}
+.btn-delete-reply:hover {
+    background-color: #dc2626;
+}
 
+.btn-like-reply {
+    background-color: #22c55e;
+    color: white;
+}
+
+.btn-like-reply:hover {
+    background-color: #16a34a;
+}
+
+.btn-dislike-reply {
+    background-color: #6b7280;
+    color: white;
+}
+
+.btn-dislike-reply {
+    background-color: #4b5563;
+}
+/* Footer */
 .footer {
     background-color: #1f2937;
     color: white;
@@ -744,7 +771,7 @@ html, body {
 }
 
 .footer-section {
-    
+    /* No additional styles */
 }
 
 .footer-title {
@@ -798,7 +825,7 @@ html, body {
     color: #9ca3af;
 }
 
-
+/* Utility */
 .hidden {
     display: none;
 }
@@ -820,4 +847,196 @@ a.pagination-btn.active {
     background-color: #2563eb;
     color: white;
     border-color: #2563eb;
+}
+
+__________________________________________________________________________
+
+/* User Profile Styles */
+.user-profile-section {
+    background-color: white;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 32px;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.user-profile-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+@media (min-width: 768px) {
+    .user-profile-header {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+}
+
+.profile-avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 16px;
+}
+
+@media (min-width: 768px) {
+    .profile-avatar {
+        margin-right: 24px;
+        margin-bottom: 0;
+    }
+}
+
+.profile-info {
+    flex: 1;
+    text-align: center;
+}
+
+@media (min-width: 768px) {
+    .profile-info {
+        text-align: left;
+    }
+}
+
+.profile-name {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.profile-email {
+    color: #6b7280;
+    margin-bottom: 16px;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+}
+
+@media (min-width: 768px) {
+    .profile-stats {
+        justify-content: flex-start;
+    }
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@media (min-width: 768px) {
+    .stat-item {
+        align-items: flex-start;
+    }
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.stat-label {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.profile-tabs {
+    display: flex;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 24px;
+}
+
+.profile-tab {
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+}
+
+.profile-tab.active {
+    color: #2563eb;
+    border-bottom-color: #2563eb;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content:not(.hidden) {
+    display: block;
+}
+
+/* Pending book styles */
+.pending-card {
+    position: relative;
+}
+
+.book-status {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.book-status.pending {
+    background-color: #fbbf24;
+    color: #92400e;
+}
+
+.btn-remove-saved, .btn-cancel-request {
+    background-color: #ef4444;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-remove-saved i, .btn-cancel-request i {
+    margin-right: 4px;
+}
+
+.btn-remove-saved:hover, .btn-cancel-request:hover {
+    background-color: #dc2626;
+}
+
+/* Add to existing styles */
+.btn-save.saved {
+    background-color: #22c55e !important;
+}
+
+.btn-save.saved:hover {
+    background-color: #16a34a !important;
+}
+
+.btn-remove-saved {
+    background-color: #ef4444;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-remove-saved:hover {
+    background-color: #dc2626;
+}
+
+.btn-remove-saved i {
+    margin-right: 4px;
 }
