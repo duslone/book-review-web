@@ -430,6 +430,15 @@ function saveBook(bookId) {
     
     localStorage.setItem('savedBooks', JSON.stringify(savedBooks));
     updateSavedBooksCount();
+    
+    // Cập nhật giao diện ngay lập tức nếu đang ở trang user-profile
+    if (window.location.pathname.includes('user-profile.html')) {
+        // Trigger custom event để cập nhật giao diện
+        window.dispatchEvent(new CustomEvent('savedBooksChanged', {
+            detail: { bookId, isSaved: index === -1 }
+        }));
+    }
+    
     return index === -1; // Returns true if book was saved, false if unsaved
 }
 
@@ -493,6 +502,12 @@ document.addEventListener('click', function(e) {
             button.classList.remove('bg-green-500', 'hover:bg-green-600');
             button.classList.add('bg-blue-600', 'hover:bg-blue-700');
         }
+        
+        // Thêm hiệu ứng visual feedback
+        button.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            button.style.transform = 'scale(1)';
+        }, 150);
     }
 });
 
@@ -767,13 +782,20 @@ genreFilters.forEach(filter => {
         bookGrid.querySelectorAll('.btn-save').forEach(button => {
             button.addEventListener('click', (e) => {
                 e.preventDefault();
+                const bookCard = button.closest('.book-card');
+                if (!bookCard) return;
+                
+                const bookId = parseInt(bookCard.dataset.bookId);
+                
                 if (!currentUser) {
                     loginModal.classList.remove('hidden');
                     return;
                 }
 
+                const isSaved = saveBook(bookId);
                 const icon = button.querySelector('i');
-                if (icon.classList.contains('fa-bookmark')) {
+                
+                if (isSaved) {
                     icon.classList.remove('fa-bookmark');
                     icon.classList.add('fa-check');
                     button.innerHTML = '<i class="fas fa-check mr-1"></i> Đã lưu';
@@ -786,38 +808,16 @@ genreFilters.forEach(filter => {
                     button.classList.remove('bg-green-500', 'hover:bg-green-600');
                     button.classList.add('bg-blue-600', 'hover:bg-blue-700');
                 }
+                
+                // Thêm hiệu ứng visual feedback
+                button.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    button.style.transform = 'scale(1)';
+                }, 150);
             });
         });
     });
 });
-
-// Bookmark Button
-const bookmarkButtons = document.querySelectorAll('.btn-save');
-bookmarkButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (!currentUser) {
-            loginModal.classList.remove('hidden');
-            return;
-        }
-
-        const icon = button.querySelector('i');
-        if (icon.classList.contains('fa-bookmark')) {
-            icon.classList.remove('fa-bookmark');
-            icon.classList.add('fa-check');
-            button.innerHTML = '<i class="fas fa-check mr-1"></i> Đã lưu';
-            button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-            button.classList.add('bg-green-500', 'hover:bg-green-600');
-        } else {
-            icon.classList.remove('fa-check');
-            icon.classList.add('fa-bookmark');
-            button.innerHTML = '<i class="fas fa-bookmark mr-1"></i> Lưu';
-            button.classList.remove('bg-green-500', 'hover:bg-green-600');
-            button.classList.add('bg-blue-600', 'hover:bg-blue-700');
-        }
-    });
-});
-
 
 // Update book ratings
 function updateBookRatings() {
@@ -872,7 +872,7 @@ function createReplyElement(reply, isNested = false) {
                 <button class="btn-reply-to-reply">
                     <i class="fas fa-reply"></i> Trả lời
                 </button>
-                ${currentUser && reply.user === currentUser.name ? `
+                ${currentUser && (reply.user === currentUser.name || reply.userEmail === currentUser.email) ? `
                     <button class="btn-delete-reply">
                         <i class="fas fa-trash"></i> Xóa
                     </button>
@@ -958,7 +958,7 @@ function setupReplyEventListeners(replyElement, reviewId, parentReplyId, replyIn
                     reply = replies[reviewId][replyIndex];
                 }
 
-                if (reply && reply.user === currentUser.name) {
+                if (reply && (reply.user === currentUser.name || reply.userEmail === currentUser.email)) {
                     if (parentReplyId !== null) {
                         replies[reviewId][parentReplyId].nestedReplies.splice(replyIndex, 1);
                     } else {
@@ -1065,6 +1065,7 @@ function setupReplyEventListeners(replyElement, reviewId, parentReplyId, replyIn
                 if (parentReplyId !== null) {
                     replies[reviewId][parentReplyId].nestedReplies.push({
                         user: currentUser.name,
+                        userEmail: currentUser.email,
                         text: replyText,
                         date,
                         likes: 0,
@@ -1076,6 +1077,7 @@ function setupReplyEventListeners(replyElement, reviewId, parentReplyId, replyIn
                     }
                     replies[reviewId].push({
                         user: currentUser.name,
+                        userEmail: currentUser.email,
                         text: replyText,
                         date,
                         likes: 0,
@@ -1196,7 +1198,7 @@ if (window.location.pathname.includes('book-review.html')) {
                                     <button class="btn-reply" data-review-id="${index}">
                                         <i class="fas fa-reply"></i> Trả lời
                                     </button>
-                                    ${currentUser && review.user === currentUser.name ? `
+                                    ${currentUser && (review.user === currentUser.name || review.userEmail === currentUser.email) ? `
                                         <button class="btn-delete-review" data-review-id="${index}">
                                             <i class="fas fa-trash"></i> Xóa
                                         </button>
@@ -1229,7 +1231,7 @@ if (window.location.pathname.includes('book-review.html')) {
                 document.querySelectorAll('.btn-delete-review').forEach(button => {
                     button.addEventListener('click', () => {
                         const reviewId = button.dataset.reviewId;
-                        if (currentUser && reviews[reviewId] && reviews[reviewId].user === currentUser.name) {
+                        if (currentUser && reviews[reviewId] && (reviews[reviewId].user === currentUser.name || reviews[reviewId].userEmail === currentUser.email)) {
                             reviews.splice(reviewId, 1);
                             localStorage.setItem('reviews', JSON.stringify(reviews));
                             delete replies[reviewId];
@@ -1318,6 +1320,7 @@ if (window.location.pathname.includes('book-review.html')) {
                         reviews.push({
                             bookId: parseInt(bookId),
                             user: currentUser.name,
+                            userEmail: currentUser.email,
                             rating: parseInt(rating),
                             comment,
                             date,
@@ -1397,6 +1400,7 @@ if (window.location.pathname.includes('book-review.html')) {
                                     
                                     replies[reviewId].push({
                                         user: currentUser.name,
+                                        userEmail: currentUser.email,
                                         text: replyText,
                                         date,
                                         likes: 0,

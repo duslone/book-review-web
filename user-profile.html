@@ -11,8 +11,10 @@
     <header class="header">
         <div class="container header-content">
             <div class="logo-section">
-                <i class="fas fa-book-open logo-icon"></i>
-                <h1 class="logo-title">RW_BOOK</h1>
+                <a href="index.html" class="logo-link">
+                    <i class="fas fa-book-open logo-icon"></i>
+                    <h1 class="logo-title">RW_BOOK</h1>
+                </a>
             </div>
             <nav class="nav-desktop">
                 <a href="index.html">Trang chủ</a>
@@ -202,6 +204,7 @@
                     savedBooks.forEach(book => {
                         const div = document.createElement('div');
                         div.className = 'book-card';
+                        div.dataset.bookId = book.id;
                         div.innerHTML = `
                             <img src="${book.image}" alt="${book.title}" class="book-image">
                             <div class="book-content">
@@ -243,6 +246,7 @@
                 const pendingBooks = getPendingBooksForUser(currentUser.email);
                 document.querySelector('.pending-books-stat .stat-number').textContent = pendingBooks.length;
             }
+            
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (currentUser) {
                 document.querySelector('.user-greeting').textContent = `Xin chào, ${currentUser.name}`;
@@ -252,10 +256,32 @@
             } else {
                 window.location.href = 'index.html';
             }
+            
             // Lắng nghe sự kiện storage để cập nhật khi có thay đổi ở tab khác
             window.addEventListener('storage', function(e) {
                 if (e.key === 'savedBooks') {
                     renderSavedBooks();
+                }
+            });
+            
+            // Lắng nghe custom event để cập nhật giao diện ngay lập tức
+            window.addEventListener('savedBooksChanged', function(e) {
+                const { bookId, isSaved } = e.detail;
+                if (!isSaved) {
+                    // Sách bị xóa khỏi danh sách đã lưu
+                    const bookCard = document.querySelector(`.book-card[data-book-id="${bookId}"]`);
+                    if (bookCard) {
+                        // Thêm hiệu ứng fade out trước khi xóa
+                        bookCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                        bookCard.style.opacity = '0';
+                        bookCard.style.transform = 'scale(0.95)';
+                        
+                        setTimeout(() => {
+                            bookCard.remove();
+                            // Cập nhật lại danh sách và số lượng
+                            renderSavedBooks();
+                        }, 300);
+                    }
                 }
             });
         });
