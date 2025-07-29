@@ -1108,3 +1108,183 @@ __________________________________________________________________________
 .btn-remove-saved i {
     margin-right: 4px;
 }
+
+/* User Profile Responsive Improvements */
+@media (max-width: 768px) {
+    .user-profile-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 20px;
+    }
+    
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .profile-info {
+        text-align: center;
+    }
+    
+    .profile-stats {
+        justify-content: center;
+        gap: 20px;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .profile-tabs {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .profile-tab {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .book-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    .book-card .book-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .btn-view-reviews,
+    .btn-remove-saved,
+    .btn-save {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 16px;
+    }
+    
+    .book-content {
+        padding: 12px;
+    }
+    
+    .book-title {
+        font-size: 1.1rem;
+        line-height: 1.3;
+    }
+    
+    .book-description {
+        font-size: 0.9rem;
+        line-height: 1.4;
+        -webkit-line-clamp: 3;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .profile-name {
+        font-size: 1.5rem;
+    }
+    
+    .profile-email {
+        font-size: 0.9rem;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+    }
+}
+
+/* Improved empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+    background: #f9fafb;
+    border-radius: 12px;
+    margin: 20px 0;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    color: #d1d5db;
+    display: block;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    margin: 0;
+    color: #6b7280;
+}
+
+/* Enhanced book card animations */
+.book-card {
+    transition: all 0.3s ease;
+}
+
+.book-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.book-card.removing {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.3s ease;
+}
+
+/* Improved button styles */
+.btn-remove-saved {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-remove-saved:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+.btn-remove-saved:active {
+    transform: translateY(0);
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f4f6;
+    border-top: 2px solid #2563eb;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

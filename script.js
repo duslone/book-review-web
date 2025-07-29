@@ -421,6 +421,18 @@ function saveBook(bookId) {
         savedBooks[userEmail] = [];
     }
     
+    // Đảm bảo bookId là số nguyên
+    bookId = parseInt(bookId);
+    
+    // Kiểm tra bookId hợp lệ
+    if (!bookId || isNaN(bookId)) {
+        console.error('Invalid book ID:', bookId);
+        return false;
+    }
+    
+    // Loại bỏ các giá trị null/undefined/lỗi khỏi mảng
+    savedBooks[userEmail] = savedBooks[userEmail].filter(id => typeof id === 'number' && !isNaN(id));
+    
     const index = savedBooks[userEmail].indexOf(bookId);
     if (index === -1) {
         savedBooks[userEmail].push(bookId);
@@ -431,25 +443,32 @@ function saveBook(bookId) {
     localStorage.setItem('savedBooks', JSON.stringify(savedBooks));
     updateSavedBooksCount();
     
-    // Cập nhật giao diện ngay lập tức nếu đang ở trang user-profile
     if (window.location.pathname.includes('user-profile.html')) {
-        // Trigger custom event để cập nhật giao diện
         window.dispatchEvent(new CustomEvent('savedBooksChanged', {
             detail: { bookId, isSaved: index === -1 }
         }));
     }
     
-    return index === -1; // Returns true if book was saved, false if unsaved
+    updateSaveButtons();
+    return index === -1;
 }
 
 function isBookSaved(bookId) {
     if (!currentUser) return false;
     const userEmail = currentUser.email;
+    bookId = parseInt(bookId);
+    
+    // Kiểm tra bookId hợp lệ
+    if (!bookId || isNaN(bookId)) {
+        return false;
+    }
+    
     return savedBooks[userEmail] && savedBooks[userEmail].includes(bookId);
 }
 
 window.getSavedBooksForUser = function(email) {
-    return savedBooks[email] || [];
+    // Đảm bảo chỉ trả về mảng id là số nguyên
+    return (savedBooks[email] || []).filter(id => typeof id === 'number' && !isNaN(id));
 };
 
 function updateSaveButtons() {
@@ -469,36 +488,150 @@ function updateSaveButtons() {
         }
     });
 }
+
+// Hàm mới để render lại sách đã lưu trên trang user-profile
+function renderSavedBooks() {
+    if (!window.location.pathname.includes('user-profile.html')) return;
+    
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (!currentUser) return;
+    
+    const savedBookIds = window.getSavedBooksForUser(currentUser.email);
+    const allBooks = window.books || [];
+    const savedBooks = allBooks.filter(b => savedBookIds.includes(b.id));
+    const savedBooksGrid = document.querySelector('#savedBooksTab .book-grid');
+    
+    if (!savedBooksGrid) return;
+    
+    savedBooksGrid.innerHTML = '';
+    
+    if (savedBooks.length === 0) {
+        savedBooksGrid.innerHTML = '<div class="empty-state"><i class="fas fa-book-open"></i><p>Bạn chưa lưu cuốn sách nào.</p></div>';
+    } else {
+        savedBooks.forEach(book => {
+            const div = document.createElement('div');
+            div.className = 'book-card';
+            div.dataset.bookId = book.id;
+            div.innerHTML = `
+                <img src="${book.image}" alt="${book.title}" class="book-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YWFhYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';">
+                <div class="book-content">
+                    <h3 class="book-title">${book.title}</h3>
+                    <p class="book-author">Tác giả: ${book.author}</p>
+                    <p class="book-publisher-author">Nhà xuất bản: ${book.publisher}</p>
+                    <p class="book-description">${book.description}</p>
+                    <div class="book-actions">
+                        <button class="btn-view-reviews" data-book-id="${book.id}">Xem đánh giá</button>
+                        <button class="btn-remove-saved" data-book-id="${book.id}">
+                            <i class="fas fa-trash"></i> Xóa
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add event listeners
+            div.querySelector('.btn-view-reviews').onclick = () => {
+                window.location.href = `book-review.html?bookId=${book.id}`;
+            };
+            
+            div.querySelector('.btn-remove-saved').onclick = function() {
+                const userEmail = currentUser.email;
+                let allSaved = JSON.parse(localStorage.getItem('savedBooks')) || {};
+                const savedBookIds = allSaved[userEmail] || [];
+                const idx = savedBookIds.indexOf(book.id);
+                if (idx !== -1) {
+                    savedBookIds.splice(idx, 1);
+                    allSaved[userEmail] = savedBookIds;
+                    localStorage.setItem('savedBooks', JSON.stringify(allSaved));
+                    
+                    // Add fade out animation
+                    div.classList.add('removing');
+                    
+                    setTimeout(() => {
+                        div.remove();
+                        // Update counter
+                        document.querySelector('.saved-books-stat .stat-number').textContent = savedBookIds.length;
+                        
+                        // Show notification
+                        showNotification('Đã xóa sách khỏi danh sách đã lưu', 'success');
+                    }, 300);
+                }
+            };
+            
+            savedBooksGrid.appendChild(div);
+        });
+    }
+    
+    // Cập nhật số lượng sách đã lưu
+    const statElement = document.querySelector('.saved-books-stat .stat-number');
+    if (statElement) {
+        statElement.textContent = savedBooks.length;
+    }
+}
+
+// Hàm hiển thị thông báo
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'}"></i>
+        <span>${message}</span>
+        <button class="notification-close"><i class="fas fa-times"></i></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+    
+    // Manual close
+    notification.querySelector('.notification-close').onclick = () => {
+        notification.remove();
+    };
+}
 // ==================== EVENT LISTENERS ====================
-// Bookmark Button
+// Comprehensive event delegation for all save buttons
 document.addEventListener('click', function(e) {
+    // Handle save button clicks
     if (e.target.closest('.btn-save')) {
         e.preventDefault();
+        e.stopPropagation();
+        
         const button = e.target.closest('.btn-save');
         const bookCard = button.closest('.book-card');
         
-        if (!bookCard) return;
+        if (!bookCard) {
+            console.error('No book card found for save button');
+            return;
+        }
         
-        const bookId = parseInt(bookCard.dataset.bookId);
+        // Try to get book ID from multiple sources
+        let bookId = parseInt(button.dataset.bookId) || parseInt(bookCard.dataset.bookId);
+        
+        if (!bookId || isNaN(bookId)) {
+            console.error('Invalid book ID:', button.dataset.bookId, bookCard.dataset.bookId);
+            return;
+        }
         
         if (!currentUser) {
             loginModal.classList.remove('hidden');
             return;
         }
 
+        console.log('Saving book:', bookId); // Debug log
         const isSaved = saveBook(bookId);
-        const icon = button.querySelector('i');
+        console.log('Save result:', isSaved); // Debug log
         
+        // Update button appearance immediately
         if (isSaved) {
-            icon.classList.remove('fa-bookmark');
-            icon.classList.add('fa-check');
-            button.innerHTML = '<i class="fas fa-check mr-1"></i> Đã lưu';
+            button.innerHTML = '<i class="fas fa-check"></i> Đã lưu';
             button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
             button.classList.add('bg-green-500', 'hover:bg-green-600');
         } else {
-            icon.classList.remove('fa-check');
-            icon.classList.add('fa-bookmark');
-            button.innerHTML = '<i class="fas fa-bookmark mr-1"></i> Lưu';
+            button.innerHTML = '<i class="fas fa-bookmark"></i> Lưu';
             button.classList.remove('bg-green-500', 'hover:bg-green-600');
             button.classList.add('bg-blue-600', 'hover:bg-blue-700');
         }
@@ -508,6 +641,24 @@ document.addEventListener('click', function(e) {
         setTimeout(() => {
             button.style.transform = 'scale(1)';
         }, 150);
+        
+        // Nếu đang ở trang user-profile, render lại danh sách sách đã lưu
+        if (window.location.pathname.includes('user-profile.html')) {
+            renderSavedBooks();
+        }
+    }
+    
+    // Handle view reviews button clicks
+    if (e.target.closest('.btn-view-reviews')) {
+        const button = e.target.closest('.btn-view-reviews');
+        const bookCard = button.closest('.book-card');
+        
+        if (bookCard) {
+            const bookId = parseInt(button.dataset.bookId) || parseInt(bookCard.dataset.bookId);
+            if (bookId && !isNaN(bookId)) {
+                window.location.href = `book-review.html?bookId=${bookId}`;
+            }
+        }
     }
 });
 
@@ -712,7 +863,7 @@ function createBookCard(book) {
     card.dataset.genre = book.genres.join(',');
 
     card.innerHTML = `
-        <img src="${book.image}" alt="${book.title}" class="book-image">
+        <img src="${book.image}" alt="${book.title}" class="book-image" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YWFhYSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';">
         <div class="book-content">
             <h3 class="book-title">${book.title}</h3>
             <p class="book-author">Tác giả: ${book.author}</p>
@@ -725,12 +876,60 @@ function createBookCard(book) {
             <p class="book-description">${book.description}</p>
             <div class="book-actions">
                 <button class="btn-view-reviews" data-book-id="${book.id}">Xem đánh giá</button>
-                <button class="btn-save ${saveButtonClass}">
+                <button class="btn-save ${saveButtonClass}" data-book-id="${book.id}">
                     <i class="fas ${saveButtonIcon}"></i> ${saveButtonText}
                 </button>
             </div>
         </div>
     `;
+    
+    // Add event listeners directly to the card
+    const saveButton = card.querySelector('.btn-save');
+    const viewButton = card.querySelector('.btn-view-reviews');
+    
+    if (saveButton) {
+        saveButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (!currentUser) {
+                loginModal.classList.remove('hidden');
+                return;
+            }
+            
+            const bookId = parseInt(card.dataset.bookId);
+            console.log('Saving book from card:', bookId); // Debug log
+            
+            const isSaved = saveBook(bookId);
+            
+            // Update button appearance
+            if (isSaved) {
+                saveButton.innerHTML = '<i class="fas fa-check"></i> Đã lưu';
+                saveButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                saveButton.classList.add('bg-green-500', 'hover:bg-green-600');
+            } else {
+                saveButton.innerHTML = '<i class="fas fa-bookmark"></i> Lưu';
+                saveButton.classList.remove('bg-green-500', 'hover:bg-green-600');
+                saveButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            }
+            
+            // Visual feedback
+            saveButton.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                saveButton.style.transform = 'scale(1)';
+            }, 150);
+        });
+    }
+    
+    if (viewButton) {
+        viewButton.addEventListener('click', () => {
+            const bookId = card.dataset.bookId;
+            if (bookId) {
+                window.location.href = `book-review.html?bookId=${bookId}`;
+            }
+        });
+    }
+    
     return card;
 }
 
@@ -1565,27 +1764,17 @@ function updateBookCardEventListeners() {
             
             const bookId = parseInt(bookCard.dataset.bookId);
             
+            if (!bookId || isNaN(bookId)) {
+                console.error('Invalid book ID:', bookCard.dataset.bookId);
+                return;
+            }
+            
             if (!currentUser) {
                 loginModal.classList.remove('hidden');
                 return;
             }
 
             const isSaved = saveBook(bookId);
-            const icon = button.querySelector('i');
-            
-            if (isSaved) {
-                icon.classList.remove('fa-bookmark');
-                icon.classList.add('fa-check');
-                button.innerHTML = '<i class="fas fa-check mr-1"></i> Đã lưu';
-                button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                button.classList.add('bg-green-500', 'hover:bg-green-600');
-            } else {
-                icon.classList.remove('fa-check');
-                icon.classList.add('fa-bookmark');
-                button.innerHTML = '<i class="fas fa-bookmark mr-1"></i> Lưu';
-                button.classList.remove('bg-green-500', 'hover:bg-green-600');
-                button.classList.add('bg-blue-600', 'hover:bg-blue-700');
-            }
             
             // Add visual feedback
             button.style.transform = 'scale(0.95)';
@@ -1608,6 +1797,11 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.value = decodeURIComponent(searchParam);
         performSearch();
     }
+    
+    // Render saved books if on user-profile page
+    if (window.location.pathname.includes('user-profile.html')) {
+        renderSavedBooks();
+    }
 });
 
 // Khi trang load xong cũng cập nhật
@@ -1616,3 +1810,72 @@ if (document.readyState === 'loading') {
 } else {
     updateSavedBooksCount();
 }
+
+// Hàm debug để kiểm tra tất cả sách có thể lưu được không
+function debugSaveBooks() {
+    console.log('=== DEBUG SAVE BOOKS ===');
+    console.log('Current user:', currentUser);
+    console.log('All books:', books.length);
+    console.log('Saved books:', savedBooks);
+    
+    // Kiểm tra từng sách
+    books.forEach(book => {
+        const canSave = isBookSaved(book.id);
+        console.log(`Book ${book.id}: ${book.title} - Can save: ${canSave}`);
+    });
+}
+
+// Hàm để đảm bảo tất cả book cards trên trang đều có thể lưu được
+function ensureAllBooksCanBeSaved() {
+    const allBookCards = document.querySelectorAll('.book-card');
+    
+    allBookCards.forEach(card => {
+        const bookId = parseInt(card.dataset.bookId);
+        if (!bookId || isNaN(bookId)) {
+            console.error('Invalid book ID found:', card.dataset.bookId);
+            return;
+        }
+        
+        // Đảm bảo save button có data-book-id
+        const saveButton = card.querySelector('.btn-save');
+        if (saveButton && !saveButton.dataset.bookId) {
+            saveButton.dataset.bookId = bookId;
+        }
+        
+        // Đảm bảo view button có data-book-id
+        const viewButton = card.querySelector('.btn-view-reviews');
+        if (viewButton && !viewButton.dataset.bookId) {
+            viewButton.dataset.bookId = bookId;
+        }
+    });
+    
+    console.log(`Ensured ${allBookCards.length} book cards can be saved`);
+}
+
+// Thêm vào DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    // Debug function (có thể xóa sau khi test xong)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        window.debugSaveBooks = debugSaveBooks;
+        console.log('Debug function available: window.debugSaveBooks()');
+    }
+    
+    // Đảm bảo tất cả sách đều có thể lưu được
+    ensureAllBooksCanBeSaved();
+    
+    updateSaveButtons();
+    updateBookCardEventListeners();
+    
+    // Handle search parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    if (searchParam && searchInput) {
+        searchInput.value = decodeURIComponent(searchParam);
+        performSearch();
+    }
+    
+    // Render saved books if on user-profile page
+    if (window.location.pathname.includes('user-profile.html')) {
+        renderSavedBooks();
+    }
+});

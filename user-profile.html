@@ -189,70 +189,16 @@
     <script>
         // Load user data when page loads
         document.addEventListener('DOMContentLoaded', () => {
-            function renderSavedBooks() {
-                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-                if (!currentUser) return;
-                // Hiển thị sách đã lưu
-                const savedBookIds = window.getSavedBooksForUser(currentUser.email);
-                const allBooks = window.books || [];
-                const savedBooks = allBooks.filter(b => savedBookIds.includes(b.id));
-                const savedBooksGrid = document.querySelector('#savedBooksTab .book-grid');
-                savedBooksGrid.innerHTML = '';
-                if (savedBooks.length === 0) {
-                    savedBooksGrid.innerHTML = '<p>Bạn chưa lưu cuốn sách nào.</p>';
-                } else {
-                    savedBooks.forEach(book => {
-                        const div = document.createElement('div');
-                        div.className = 'book-card';
-                        div.dataset.bookId = book.id;
-                        div.innerHTML = `
-                            <img src="${book.image}" alt="${book.title}" class="book-image">
-                            <div class="book-content">
-                                <h3 class="book-title">${book.title}</h3>
-                                <p class="book-author">Tác giả: ${book.author}</p>
-                                <p class="book-publisher-author">Nhà xuất bản: ${book.publisher}</p>
-                                <p class="book-description">${book.description}</p>
-                                <div class="book-actions" style="display:flex;align-items:center;gap:8px;justify-content:center;margin-top:12px;">
-                                    <button class="btn-view-reviews" data-book-id="${book.id}" style="padding:4px 10px;min-width:unset;">Xem đánh giá</button>
-                                    <button class="btn-remove-saved" data-book-id="${book.id}" style="padding:4px 10px;min-width:unset;width:auto;height:auto;display:inline-flex;align-items:center;justify-content:center;">
-                                        <i class='fas fa-trash'></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        div.querySelector('.btn-view-reviews').onclick = () => {
-                            window.location.href = `book-review.html?bookId=${book.id}`;
-                        };
-                        div.querySelector('.btn-remove-saved').onclick = function() {
-                            const userEmail = currentUser.email;
-                            let allSaved = JSON.parse(localStorage.getItem('savedBooks')) || {};
-                            const savedBookIds = allSaved[userEmail] || [];
-                            const idx = savedBookIds.indexOf(book.id);
-                            if (idx !== -1) {
-                                savedBookIds.splice(idx, 1);
-                                allSaved[userEmail] = savedBookIds;
-                                localStorage.setItem('savedBooks', JSON.stringify(allSaved));
-                                window.savedBooks = savedBooks = allSaved;
-                                renderSavedBooks();
-                            }
-                        };
-                        savedBooksGrid.appendChild(div);
-                    });
-                }
-                // Cập nhật số lượng sách đã lưu
-                document.querySelector('.saved-books-stat .stat-number').textContent = savedBooks.length;
-                
-                // Cập nhật số lượng sách chờ duyệt
-                const pendingBooks = getPendingBooksForUser(currentUser.email);
-                document.querySelector('.pending-books-stat .stat-number').textContent = pendingBooks.length;
-            }
-            
             const currentUser = JSON.parse(localStorage.getItem('currentUser'));
             if (currentUser) {
                 document.querySelector('.user-greeting').textContent = `Xin chào, ${currentUser.name}`;
                 document.getElementById('profileName').textContent = currentUser.name;
                 document.getElementById('profileEmail').textContent = currentUser.email;
-                renderSavedBooks();
+                
+                // Sử dụng hàm renderSavedBooks từ script.js
+                if (typeof renderSavedBooks === 'function') {
+                    renderSavedBooks();
+                }
             } else {
                 window.location.href = 'index.html';
             }
@@ -260,7 +206,9 @@
             // Lắng nghe sự kiện storage để cập nhật khi có thay đổi ở tab khác
             window.addEventListener('storage', function(e) {
                 if (e.key === 'savedBooks') {
-                    renderSavedBooks();
+                    if (typeof renderSavedBooks === 'function') {
+                        renderSavedBooks();
+                    }
                 }
             });
             
@@ -279,7 +227,9 @@
                         setTimeout(() => {
                             bookCard.remove();
                             // Cập nhật lại danh sách và số lượng
-                            renderSavedBooks();
+                            if (typeof renderSavedBooks === 'function') {
+                                renderSavedBooks();
+                            }
                         }, 300);
                     }
                 }
@@ -543,7 +493,9 @@
                 const tabType = this.getAttribute('data-tab');
                 if (tabType === 'saved') {
                     document.getElementById('savedBooksTab').classList.remove('hidden');
-                    renderSavedBooks();
+                    if (typeof renderSavedBooks === 'function') {
+                        renderSavedBooks();
+                    }
                 } else if (tabType === 'pending') {
                     document.getElementById('pendingBooksTab').classList.remove('hidden');
                     renderPendingBooks();
@@ -654,8 +606,6 @@
             resize: vertical;
             min-height: 100px;
         }
-
-
 
         .form-actions {
             display: flex;
@@ -890,6 +840,93 @@
                 right: 10px;
                 left: 10px;
                 max-width: none;
+            }
+            
+            .user-profile-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 16px;
+            }
+            
+            .profile-stats {
+                justify-content: center;
+            }
+            
+            .profile-tabs {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .profile-tab {
+                width: 100%;
+                text-align: center;
+            }
+        }
+
+        /* Improved book card styles for user profile */
+        .book-card .book-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn-view-reviews,
+        .btn-remove-saved {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-view-reviews {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-view-reviews:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-remove-saved {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-remove-saved:hover {
+            background: #dc2626;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .book-card .book-actions {
+                flex-direction: column;
+                gap: 6px;
+            }
+            
+            .btn-view-reviews,
+            .btn-remove-saved {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .book-content {
+                padding: 12px;
+            }
+            
+            .book-title {
+                font-size: 1.1rem;
+            }
+            
+            .book-description {
+                font-size: 0.9rem;
+                line-height: 1.4;
             }
         }
     </style>
